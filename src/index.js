@@ -106,6 +106,8 @@ function ImageView({ $app, initialState, onClick }) {
   this.render();
 }
 
+const cache = {};
+
 function App($app) {
   this.state = {
     isRoot: false,
@@ -128,7 +130,10 @@ function App($app) {
     onClick: async (node) => {
       try {
         if (node.type === "DIRECTORY") {
-          const nextNodes = await request(node.id);
+          const nextNodes = cache[node.id]
+            ? cache[node.id]
+            : await request(node.id);
+          cache[node.id] = nextNodes;
           this.setState({
             ...this.state,
             isRoot: false,
@@ -149,11 +154,10 @@ function App($app) {
         const prevNodeId = nextState.depth.length
           ? nextState.depth[nextState.depth.length - 1].id
           : null;
-        const prevNodes = await request(prevNodeId);
         this.setState({
           ...nextState,
           isRoot: !prevNodeId,
-          nodes: prevNodes,
+          nodes: prevNodeId ? cache[prevNodeId] : cache.root,
         });
       } catch (e) {
         throw new Error(e.message);
@@ -181,6 +185,8 @@ function App($app) {
         isRoot: true,
         nodes: rootNodes,
       });
+
+      cache.root = rootNodes;
     } catch (e) {
       throw new Error(e);
     }

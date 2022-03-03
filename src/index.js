@@ -13,10 +13,23 @@ const request = async (nodeId) => {
   }
 };
 
+const loading_request = async ({ nodeId, setLoading, finishLoading }) => {
+  try {
+    setLoading();
+    const nodes = await request(nodeId);
+    return nodes;
+  } catch (e) {
+    throw new Error(`무엇인가 잘못 되었습니다. ${e.message}`);
+  } finally {
+    //finally를 꼭 써야 하는 이유?
+    finishLoading();
+  }
+};
+
 function Nodes({ $app, initialState, onClick, onBackClick }) {
   this.state = initialState;
   this.onClick = onClick;
-  this.onBackClick = onBackClick;
+  this.onBackClick = onBackClick; // 꼭 this로 만들어야 하는 이유가 있나?
   this.$target = document.createElement("div");
   this.$target.className = "Nodes";
   $app.append(this.$target);
@@ -106,6 +119,28 @@ function ImageView({ $app, initialState, onClick }) {
   this.render();
 }
 
+function Loading({ $app, initialState }) {
+  this.state = initialState;
+  this.$target = document.createElement("div");
+  this.$target.className = "Loading Modal";
+
+  $app.append(this.$target);
+
+  this.setState = (nextState) => {
+    this.state = nextState;
+    this.render();
+  };
+
+  this.render = () => {
+    this.$target.innerHTML = `<div class="content">
+                                <img src="./assets/nyan-cat.gif">
+                              </div>`;
+    this.$target.style.display = this.state ? "block" : "none";
+  };
+
+  this.render();
+}
+
 const cache = {};
 
 function App($app) {
@@ -114,7 +149,9 @@ function App($app) {
     nodes: [],
     depth: [],
     selectedFilePath: null,
+    isLoading: false,
   };
+  const loading = new Loading({ $app, initialState: this.state.isLoading });
   const imageView = new ImageView({
     $app,
     initialState: this.state.selectedFilePath,
@@ -132,7 +169,15 @@ function App($app) {
         if (node.type === "DIRECTORY") {
           const nextNodes = cache[node.id]
             ? cache[node.id]
-            : await request(node.id);
+            : await loading_request({
+                nodeId: node.id,
+                setLoading: () => {
+                  this.setState({ ...this.state, isLoading: true });
+                },
+                finishLoading: () => {
+                  this.setState({ ...this.state, isLoading: false });
+                },
+              });
           cache[node.id] = nextNodes;
           this.setState({
             ...this.state,
@@ -170,11 +215,20 @@ function App($app) {
     breadcrumb.setState(this.state.depth);
     nodes.setState({ isRoot: this.state.isRoot, nodes: this.state.nodes });
     imageView.setState(this.state.selectedFilePath);
+    loading.setState(this.state.isLoading);
   };
 
   this.init = async () => {
     try {
-      const rootNodes = await request();
+      const rootNodes = await loading_request({
+        nodeId: null,
+        setLoading: () => {
+          this.setState({ ...this.state, isLoading: true });
+        },
+        finishLoading: () => {
+          this.setState({ ...this.state, isLoading: false });
+        },
+      });
       console.log("rootNodes: ", rootNodes);
       window.addEventListener("keydown", (e) => {
         if (e.key === "Escape")

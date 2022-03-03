@@ -73,8 +73,9 @@ function Nodes({ $app, initialState, onClick, onBackClick }) {
   this.render();
 }
 
-function Breadcrumb({ $app, initialState }) {
+function Breadcrumb({ $app, initialState = [], onClick }) {
   this.state = initialState;
+  this.onClick = onClick;
   this.$target = document.createElement("nav");
   this.$target.className = "Breadcrumb";
   $app.append(this.$target);
@@ -92,6 +93,15 @@ function Breadcrumb({ $app, initialState }) {
       )
       .join("")}`;
   };
+
+  this.$target.addEventListener("click", (e) => {
+    const $navItem = e.target.closest(".nav-item");
+
+    if ($navItem) {
+      const { index } = $navItem.dataset;
+      this.onClick(index ? parseInt(index, 10) : null);
+    }
+  });
 
   this.render();
 }
@@ -160,7 +170,30 @@ function App($app) {
         this.setState({ ...this.state, selectedFilePath: null });
     },
   });
-  const breadcrumb = new Breadcrumb({ $app, initialState: this.state.depth }); //순서 상관 있나?
+  const breadcrumb = new Breadcrumb({
+    $app,
+    initialState: this.state.depth,
+    onClick: (index) => {
+      if (index === null) {
+        this.setState({
+          ...this.state,
+          depth: [],
+          nodes: cache.root,
+        });
+        return;
+      }
+
+      if (index === this.state.depth.length - 1) return;
+
+      const nextDepth = this.state.depth.slice(0, index + 1);
+
+      this.setState({
+        ...this.state,
+        depth: nextDepth,
+        nodes: cache[nextDepth[nextDepth.length - 1].id],
+      });
+    },
+  }); //순서 상관 있나?
   const nodes = new Nodes({
     $app,
     initialState: { isRoot: this.state.isRoot, nodes: this.state.nodes },

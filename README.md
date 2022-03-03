@@ -32,4 +32,4 @@
 
 - [x] 캐싱 구현하기
 
-- [ ] Breadcrumb 클릭하여 이전 path 로 돌아가기
+- [x] Breadcrumb 클릭하여 이전 path 로 돌아가기

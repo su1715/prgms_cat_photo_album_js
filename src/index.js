@@ -56,19 +56,15 @@ function Nodes({ $app, initialState, onClick, onBackClick }) {
 	  		<img src = "./assets/prev.png"/>
 		</div>
 		${nodeTemplate}`;
-
-    this.$target.querySelectorAll(".Node").forEach(($node) => {
-      $node.addEventListener("click", (e) => {
-        const { nodeId } = e.currentTarget.dataset;
-        if (!nodeId) this.onBackClick();
-
-        const selectedNode = this.state.nodes.find(
-          (node) => node.id === nodeId
-        );
-        if (selectedNode) this.onClick(selectedNode);
-      });
-    });
   };
+
+  this.$target.addEventListener("click", (e) => {
+    const { nodeId } = e.target.closest(".Node").dataset;
+    if (!nodeId) this.onBackClick();
+
+    const selectedNode = this.state.nodes.find((node) => node.id === nodeId);
+    if (selectedNode) this.onClick(selectedNode);
+  });
 
   this.render();
 }
@@ -143,7 +139,7 @@ function Loading({ $app, initialState }) {
 
   this.render = () => {
     this.$target.innerHTML = `<div class="content">
-                                <img src="./assets/nyan-cat.gif">
+                                <img src="./assets/nyan-cat.gif" width="90%"/>
                               </div>`;
     this.$target.style.display = this.state ? "block" : "none";
   };
